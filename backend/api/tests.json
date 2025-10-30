@@ -1,0 +1,33 @@
+{
+  "tests": [
+    {
+      "name": "Get all folders",
+      "method": "GET",
+      "path": "/?path=folders",
+      "expectedStatus": 200,
+      "expectedBody": [
+        {
+          "id": "number",
+          "name": "string",
+          "color": "string",
+          "icon": "string"
+        }
+      ],
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get all documents",
+      "method": "GET",
+      "path": "/?path=documents",
+      "expectedStatus": 200,
+      "expectedBody": [
+        {
+          "id": "number",
+          "name": "string",
+          "folderId": "number"
+        }
+      ],
+      "bodyMatcher": "partial"
+    }
+  ]
+}

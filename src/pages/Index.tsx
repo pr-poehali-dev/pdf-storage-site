@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
+
+const API_URL = 'https://functions.poehali.dev/61726929-8064-4724-aa73-122743ce45cf';
 
 interface Document {
   id: string;
@@ -40,20 +42,9 @@ const FOLDER_ICONS = ['FileText', 'BarChart3', 'BookOpen', 'Wallet', 'Briefcase'
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
-  const [folders, setFolders] = useState<Folder[]>([
-    { id: '1', name: 'Контракты', color: 'bg-purple-100 text-purple-700', icon: 'FileText' },
-    { id: '2', name: 'Отчеты', color: 'bg-blue-100 text-blue-700', icon: 'BarChart3' },
-    { id: '3', name: 'Инструкции', color: 'bg-green-100 text-green-700', icon: 'BookOpen' },
-    { id: '4', name: 'Финансы', color: 'bg-orange-100 text-orange-700', icon: 'Wallet' },
-  ]);
-  const [documents, setDocuments] = useState<Document[]>([
-    { id: '1', name: 'Договор поставки оборудования', description: 'Контракт на поставку серверного оборудования для ЦОД', folderId: '1', uploadDate: '2024-03-15', size: '2.4 MB' },
-    { id: '2', name: 'Квартальный отчет Q1', description: 'Финансовый отчет за первый квартал 2024 года', folderId: '2', uploadDate: '2024-04-01', size: '1.8 MB' },
-    { id: '3', name: 'Руководство пользователя CRM', description: 'Подробная инструкция по работе с CRM системой', folderId: '3', uploadDate: '2024-02-20', size: '5.2 MB' },
-    { id: '4', name: 'Бюджет на 2024 год', description: 'Утвержденный бюджет компании на текущий финансовый год', folderId: '4', uploadDate: '2024-01-10', size: '3.1 MB' },
-    { id: '5', name: 'Договор аренды офиса', description: 'Соглашение об аренде офисного помещения', folderId: '1', uploadDate: '2024-03-01', size: '1.2 MB' },
-    { id: '6', name: 'Отчет по продажам', description: 'Аналитика продаж за последний месяц', folderId: '2', uploadDate: '2024-04-05', size: '900 KB' },
-  ]);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderColor, setNewFolderColor] = useState(FOLDER_COLORS[0].value);
@@ -67,6 +58,33 @@ const Index = () => {
 
   const { toast } = useToast();
 
+  useEffect(() => {
+    loadFolders();
+    loadDocuments();
+  }, []);
+
+  const loadFolders = async () => {
+    try {
+      const response = await fetch(`${API_URL}?path=folders`);
+      const data = await response.json();
+      setFolders(data.map((f: any) => ({ ...f, id: f.id.toString() })));
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось загрузить папки', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadDocuments = async () => {
+    try {
+      const response = await fetch(`${API_URL}?path=documents`);
+      const data = await response.json();
+      setDocuments(data.map((d: any) => ({ ...d, id: d.id.toString(), folderId: d.folderId.toString() })));
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось загрузить документы', variant: 'destructive' });
+    }
+  };
+
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          doc.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -76,28 +94,36 @@ const Index = () => {
 
   const getFolderById = (id: string) => folders.find(f => f.id === id);
 
-  const handleCreateFolder = () => {
+  const handleCreateFolder = async () => {
     if (!newFolderName.trim()) {
       toast({ title: 'Ошибка', description: 'Введите название папки', variant: 'destructive' });
       return;
     }
 
-    const newFolder: Folder = {
-      id: Date.now().toString(),
-      name: newFolderName,
-      color: newFolderColor,
-      icon: newFolderIcon,
-    };
+    try {
+      const response = await fetch(`${API_URL}?path=folders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newFolderName,
+          color: newFolderColor,
+          icon: newFolderIcon,
+        }),
+      });
 
-    setFolders([...folders, newFolder]);
-    setNewFolderName('');
-    setNewFolderColor(FOLDER_COLORS[0].value);
-    setNewFolderIcon(FOLDER_ICONS[0]);
-    setOpenFolderDialog(false);
-    toast({ title: 'Успешно!', description: `Папка "${newFolderName}" создана` });
+      const newFolder = await response.json();
+      setFolders([...folders, { ...newFolder, id: newFolder.id.toString() }]);
+      setNewFolderName('');
+      setNewFolderColor(FOLDER_COLORS[0].value);
+      setNewFolderIcon(FOLDER_ICONS[0]);
+      setOpenFolderDialog(false);
+      toast({ title: 'Успешно!', description: `Папка "${newFolderName}" создана` });
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось создать папку', variant: 'destructive' });
+    }
   };
 
-  const handleAddDocument = () => {
+  const handleAddDocument = async () => {
     if (!newDocName.trim()) {
       toast({ title: 'Ошибка', description: 'Введите название документа', variant: 'destructive' });
       return;
@@ -107,24 +133,30 @@ const Index = () => {
       return;
     }
 
-    const newDoc: Document = {
-      id: Date.now().toString(),
-      name: newDocName,
-      description: newDocDescription,
-      folderId: newDocFolder,
-      uploadDate: new Date().toISOString().split('T')[0],
-      size: '1.0 MB',
-    };
+    try {
+      const response = await fetch(`${API_URL}?path=documents`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newDocName,
+          description: newDocDescription,
+          folderId: parseInt(newDocFolder),
+        }),
+      });
 
-    setDocuments([...documents, newDoc]);
-    setNewDocName('');
-    setNewDocDescription('');
-    setNewDocFolder('');
-    setOpenDocDialog(false);
-    toast({ title: 'Успешно!', description: `Документ "${newDocName}" добавлен` });
+      const newDoc = await response.json();
+      setDocuments([...documents, { ...newDoc, id: newDoc.id.toString(), folderId: newDoc.folderId.toString() }]);
+      setNewDocName('');
+      setNewDocDescription('');
+      setNewDocFolder('');
+      setOpenDocDialog(false);
+      toast({ title: 'Успешно!', description: `Документ "${newDocName}" добавлен` });
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось добавить документ', variant: 'destructive' });
+    }
   };
 
-  const handleDeleteFolder = (folderId: string, e: React.MouseEvent) => {
+  const handleDeleteFolder = async (folderId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const folder = getFolderById(folderId);
     const hasDocuments = documents.some(d => d.folderId === folderId);
@@ -138,19 +170,41 @@ const Index = () => {
       return;
     }
 
-    setFolders(folders.filter(f => f.id !== folderId));
-    if (selectedFolder === folderId) {
-      setSelectedFolder(null);
+    try {
+      await fetch(`${API_URL}?path=folders&id=${folderId}`, { method: 'DELETE' });
+      setFolders(folders.filter(f => f.id !== folderId));
+      if (selectedFolder === folderId) {
+        setSelectedFolder(null);
+      }
+      toast({ title: 'Удалено', description: `Папка "${folder?.name}" удалена` });
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось удалить папку', variant: 'destructive' });
     }
-    toast({ title: 'Удалено', description: `Папка "${folder?.name}" удалена` });
   };
 
-  const handleDeleteDocument = (docId: string, e: React.MouseEvent) => {
+  const handleDeleteDocument = async (docId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const doc = documents.find(d => d.id === docId);
-    setDocuments(documents.filter(d => d.id !== docId));
-    toast({ title: 'Удалено', description: `Документ "${doc?.name}" удалён` });
+    
+    try {
+      await fetch(`${API_URL}?path=documents&id=${docId}`, { method: 'DELETE' });
+      setDocuments(documents.filter(d => d.id !== docId));
+      toast({ title: 'Удалено', description: `Документ "${doc?.name}" удалён` });
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось удалить документ', variant: 'destructive' });
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <Icon name="Loader2" className="animate-spin mx-auto mb-4 text-primary" size={48} />
+          <p className="text-gray-600 text-lg">Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-white">
