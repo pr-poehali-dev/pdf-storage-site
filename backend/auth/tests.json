@@ -1,0 +1,46 @@
+{
+  "tests": [
+    {
+      "name": "Test successful login",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "username": "admin",
+        "password": "admin123"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "token": "string",
+        "username": "admin"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test invalid credentials",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "username": "admin",
+        "password": "wrongpass"
+      },
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "Invalid credentials"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test token verification",
+      "method": "GET",
+      "path": "/",
+      "headers": {
+        "X-Admin-Token": "admin_token_1"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "authenticated": true
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

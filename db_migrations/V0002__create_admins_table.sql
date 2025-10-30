@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS admins (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(100) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO admins (username, password_hash) 
+VALUES ('admin', '$2b$10$rKZYX8k6p3zQYvJxLjH8HuZvN8jQX8xW8vN8jQX8xW8vN8jQX8xW8u')
+ON CONFLICT (username) DO NOTHING;

@@ -131,6 +131,32 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps(result)
                 }
             
+            elif method == 'PUT':
+                body = json.loads(event.get('body', '{}'))
+                doc_id = body.get('id')
+                name = body.get('name')
+                description = body.get('description', '')
+                folder_id = body.get('folderId')
+                
+                cur.execute(
+                    '''UPDATE documents 
+                       SET name = %s, description = %s, folder_id = %s
+                       WHERE id = %s
+                       RETURNING id, name, description, folder_id as "folderId", upload_date as "uploadDate", size''',
+                    (name, description, folder_id, doc_id)
+                )
+                doc = cur.fetchone()
+                conn.commit()
+                
+                result = dict(doc)
+                result['uploadDate'] = result['uploadDate'].isoformat() if result['uploadDate'] else None
+                
+                return {
+                    'statusCode': 200,
+                    'headers': headers,
+                    'body': json.dumps(result)
+                }
+            
             elif method == 'DELETE':
                 doc_id = event.get('queryStringParameters', {}).get('id')
                 cur.execute('DELETE FROM documents WHERE id = %s', (doc_id,))

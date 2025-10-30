@@ -11,6 +11,7 @@ import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 
 const API_URL = 'https://functions.poehali.dev/61726929-8064-4724-aa73-122743ce45cf';
+const AUTH_URL = 'https://functions.poehali.dev/0260e0c7-55cb-4dce-8b66-8677fbbe2609';
 
 interface Document {
   id: string;
@@ -46,6 +47,12 @@ const Index = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [adminToken, setAdminToken] = useState<string | null>(localStorage.getItem('adminToken'));
+
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderColor, setNewFolderColor] = useState(FOLDER_COLORS[0].value);
   const [newFolderIcon, setNewFolderIcon] = useState(FOLDER_ICONS[0]);
@@ -56,12 +63,65 @@ const Index = () => {
   const [newDocFolder, setNewDocFolder] = useState('');
   const [openDocDialog, setOpenDocDialog] = useState(false);
 
+  const [editingDoc, setEditingDoc] = useState<Document | null>(null);
+  const [openEditDocDialog, setOpenEditDocDialog] = useState(false);
+
   const { toast } = useToast();
 
   useEffect(() => {
     loadFolders();
     loadDocuments();
+    checkAuth();
   }, []);
+
+  const checkAuth = async () => {
+    if (!adminToken) {
+      setIsAdmin(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(AUTH_URL, {
+        headers: { 'X-Admin-Token': adminToken }
+      });
+      const data = await response.json();
+      setIsAdmin(data.authenticated === true);
+    } catch (error) {
+      setIsAdmin(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    try {
+      const response = await fetch(AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: loginUsername, password: loginPassword })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('adminToken', data.token);
+        setAdminToken(data.token);
+        setIsAdmin(true);
+        setShowLoginDialog(false);
+        setLoginUsername('');
+        setLoginPassword('');
+        toast({ title: 'Успешно!', description: 'Вы вошли как администратор' });
+      } else {
+        toast({ title: 'Ошибка', description: 'Неверные данные для входа', variant: 'destructive' });
+      }
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось войти', variant: 'destructive' });
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    setAdminToken(null);
+    setIsAdmin(false);
+    toast({ title: 'Выход', description: 'Вы вышли из режима администратора' });
+  };
 
   const loadFolders = async () => {
     try {
@@ -195,6 +255,49 @@ const Index = () => {
     }
   };
 
+  const handleEditDocument = (doc: Document) => {
+    setEditingDoc(doc);
+    setNewDocName(doc.name);
+    setNewDocDescription(doc.description);
+    setNewDocFolder(doc.folderId);
+    setOpenEditDocDialog(true);
+  };
+
+  const handleUpdateDocument = async () => {
+    if (!editingDoc || !newDocName.trim()) {
+      toast({ title: 'Ошибка', description: 'Введите название документа', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}?path=documents`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: parseInt(editingDoc.id),
+          name: newDocName,
+          description: newDocDescription,
+          folderId: parseInt(newDocFolder),
+        }),
+      });
+
+      const updatedDoc = await response.json();
+      setDocuments(documents.map(d => 
+        d.id === editingDoc.id 
+          ? { ...updatedDoc, id: updatedDoc.id.toString(), folderId: updatedDoc.folderId.toString() }
+          : d
+      ));
+      setEditingDoc(null);
+      setNewDocName('');
+      setNewDocDescription('');
+      setNewDocFolder('');
+      setOpenEditDocDialog(false);
+      toast({ title: 'Успешно!', description: 'Документ обновлён' });
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось обновить документ', variant: 'destructive' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-white flex items-center justify-center">
@@ -209,9 +312,59 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-white">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="mb-8 animate-fade-in">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">📁 Документы</h1>
-          <p className="text-gray-600">Управляйте PDF документами с удобным поиском и организацией</p>
+        <div className="mb-8 animate-fade-in flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">📁 Документы</h1>
+            <p className="text-gray-600">Управляйте PDF документами с удобным поиском и организацией</p>
+          </div>
+          <div className="flex gap-2">
+            {isAdmin ? (
+              <Button variant="outline" onClick={handleLogout} className="gap-2">
+                <Icon name="LogOut" size={18} />
+                Выйти
+              </Button>
+            ) : (
+              <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Icon name="Lock" size={18} />
+                    Вход для админа
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Вход администратора</DialogTitle>
+                    <DialogDescription>Введите логин и пароль для управления документами</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="username">Логин</Label>
+                      <Input
+                        id="username"
+                        value={loginUsername}
+                        onChange={(e) => setLoginUsername(e.target.value)}
+                        placeholder="admin"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="password">Пароль</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        placeholder="••••••"
+                        onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={handleLogin}>Войти</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
         </div>
 
         <div className="mb-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
@@ -233,13 +386,14 @@ const Index = () => {
               <Icon name="Folder" className="text-gray-700" size={24} />
               <h2 className="text-2xl font-semibold text-gray-900">Папки</h2>
             </div>
-            <Dialog open={openFolderDialog} onOpenChange={setOpenFolderDialog}>
-              <DialogTrigger asChild>
-                <Button className="gap-2 hover:scale-105 transition-transform">
-                  <Icon name="FolderPlus" size={20} />
-                  Создать папку
-                </Button>
-              </DialogTrigger>
+            {isAdmin && (
+              <Dialog open={openFolderDialog} onOpenChange={setOpenFolderDialog}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2 hover:scale-105 transition-transform">
+                    <Icon name="FolderPlus" size={20} />
+                    Создать папку
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Создать новую папку</DialogTitle>
@@ -298,6 +452,7 @@ const Index = () => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {folders.map((folder) => (
@@ -309,12 +464,14 @@ const Index = () => {
                 onClick={() => setSelectedFolder(selectedFolder === folder.id ? null : folder.id)}
               >
                 <CardContent className="p-6 relative">
-                  <button
-                    onClick={(e) => handleDeleteFolder(folder.id, e)}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
-                  >
-                    <Icon name="Trash2" size={16} className="text-red-600" />
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => handleDeleteFolder(folder.id, e)}
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
+                    >
+                      <Icon name="Trash2" size={16} className="text-red-600" />
+                    </button>
+                  )}
                   <div className="flex items-center gap-3">
                     <div className={`p-3 rounded-lg ${folder.color}`}>
                       <Icon name={folder.icon as any} size={24} />
@@ -349,13 +506,14 @@ const Index = () => {
                 </Badge>
               )}
             </div>
-            <Dialog open={openDocDialog} onOpenChange={setOpenDocDialog}>
-              <DialogTrigger asChild>
-                <Button className="gap-2 hover:scale-105 transition-transform">
-                  <Icon name="Upload" size={20} />
-                  Добавить документ
-                </Button>
-              </DialogTrigger>
+            {isAdmin && (
+              <Dialog open={openDocDialog} onOpenChange={setOpenDocDialog}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2 hover:scale-105 transition-transform">
+                    <Icon name="Upload" size={20} />
+                    Добавить документ
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Добавить документ</DialogTitle>
@@ -406,6 +564,7 @@ const Index = () => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            )}
           </div>
 
           {filteredDocuments.length === 0 ? (
@@ -419,12 +578,25 @@ const Index = () => {
                 const folder = getFolderById(doc.folderId);
                 return (
                   <Card key={doc.id} className="hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer group relative">
-                    <button
-                      onClick={(e) => handleDeleteDocument(doc.id, e)}
-                      className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-100 rounded"
-                    >
-                      <Icon name="Trash2" size={16} className="text-red-600" />
-                    </button>
+                    {isAdmin && (
+                      <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditDocument(doc);
+                          }}
+                          className="p-2 hover:bg-blue-100 rounded"
+                        >
+                          <Icon name="Edit" size={16} className="text-blue-600" />
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteDocument(doc.id, e)}
+                          className="p-2 hover:bg-red-100 rounded"
+                        >
+                          <Icon name="Trash2" size={16} className="text-red-600" />
+                        </button>
+                      </div>
+                    )}
                     <CardHeader>
                       <div className="flex items-start justify-between mb-2">
                         <div className={`p-2 rounded-lg ${folder?.color}`}>
@@ -468,6 +640,55 @@ const Index = () => {
             </div>
           )}
         </div>
+
+        <Dialog open={openEditDocDialog} onOpenChange={setOpenEditDocDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Редактировать документ</DialogTitle>
+              <DialogDescription>Измените информацию о документе</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-doc-name">Название документа</Label>
+                <Input
+                  id="edit-doc-name"
+                  placeholder="Название документа"
+                  value={newDocName}
+                  onChange={(e) => setNewDocName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-doc-description">Описание</Label>
+                <Textarea
+                  id="edit-doc-description"
+                  placeholder="Описание документа..."
+                  value={newDocDescription}
+                  onChange={(e) => setNewDocDescription(e.target.value)}
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-doc-folder">Папка</Label>
+                <Select value={newDocFolder} onValueChange={setNewDocFolder}>
+                  <SelectTrigger id="edit-doc-folder">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {folders.map((folder) => (
+                      <SelectItem key={folder.id} value={folder.id}>
+                        {folder.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOpenEditDocDialog(false)}>Отмена</Button>
+              <Button onClick={handleUpdateDocument}>Сохранить</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
