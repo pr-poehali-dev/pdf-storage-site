@@ -470,28 +470,32 @@ const Index = () => {
             {folders.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((folder) => (
               <div 
                 key={folder.id} 
-                className="relative group"
+                className={`relative group w-full text-left p-3 rounded-lg transition-all flex items-center gap-3 ${
+                  selectedFolder === folder.id ? 'bg-primary/10 text-primary font-medium' : 'text-gray-700 hover:bg-gray-100'
+                } ${draggedFolder === folder.id ? 'opacity-30 scale-95' : ''} ${
+                  draggedFolder && draggedFolder !== folder.id ? 'border-2 border-dashed border-primary' : ''
+                } ${isAdmin ? 'cursor-move select-none' : 'cursor-pointer'}`}
                 draggable={isAdmin}
-                onDragStart={() => handleDragStart(folder.id)}
+                onDragStart={(e) => {
+                  handleDragStart(folder.id);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
                 onDragOver={(e) => handleDragOver(e, folder.id)}
                 onDragEnd={handleDragEnd}
+                onClick={() => !draggedFolder && setSelectedFolder(folder.id)}
               >
-                <button
-                  onClick={() => setSelectedFolder(folder.id)}
-                  className={`w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-3 ${
-                    selectedFolder === folder.id ? 'bg-primary/10 text-primary font-medium' : 'text-gray-700'
-                  } ${draggedFolder === folder.id ? 'opacity-50' : ''} ${isAdmin ? 'cursor-move' : ''}`}
-                >
-                  <div className={`p-1 rounded ${folder.color}`}>
-                    <Icon name={folder.icon as any} size={16} />
-                  </div>
-                  <span className="flex-1 truncate">{folder.name}</span>
-                  <span className="text-sm">{documents.filter(d => d.folderId === folder.id).length}</span>
-                </button>
+                <div className={`p-1 rounded ${folder.color}`}>
+                  <Icon name={folder.icon as any} size={16} />
+                </div>
+                <span className="flex-1 truncate">{folder.name}</span>
+                <span className="text-sm">{documents.filter(d => d.folderId === folder.id).length}</span>
                 {isAdmin && (
                   <button
-                    onClick={(e) => handleDeleteFolder(folder.id, e)}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-100 rounded"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteFolder(folder.id, e);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-100 rounded ml-2"
                   >
                     <Icon name="Trash2" size={14} className="text-red-600" />
                   </button>
