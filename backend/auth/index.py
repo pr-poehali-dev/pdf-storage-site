@@ -42,7 +42,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             conn = psycopg2.connect(DATABASE_URL)
             cur = conn.cursor()
             
-            cur.execute("SELECT id, password_hash FROM admins WHERE username = %s", (username,))
+            # Escape single quotes for simple query protocol
+            safe_username = username.replace("'", "''")
+            cur.execute(f"SELECT id, password_hash FROM admins WHERE username = '{safe_username}'")
             result = cur.fetchone()
             
             cur.close()
