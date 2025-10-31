@@ -485,15 +485,15 @@ const Index = () => {
                       e.dataTransfer.effectAllowed = 'move';
                     }}
                     onDragEnd={handleDragEnd}
-                    className="cursor-move p-3 pr-2 hover:bg-gray-100/50 rounded-l-lg flex items-center"
+                    className="cursor-move p-2 hover:bg-gray-200 rounded-l-lg flex items-center shrink-0"
                     title="Перетащите для изменения порядка"
                   >
-                    <Icon name="GripVertical" size={16} className="text-gray-400" />
+                    <Icon name="GripVertical" size={18} className="text-gray-500 hover:text-gray-700" />
                   </div>
                 )}
                 <div
                   onClick={() => setSelectedFolder(folder.id)}
-                  className={`flex-1 p-3 cursor-pointer hover:bg-gray-100/50 flex items-center gap-3 ${!isAdmin ? 'rounded-lg' : 'rounded-r-lg'}`}
+                  className={`flex-1 p-3 cursor-pointer hover:bg-gray-100/50 flex items-center gap-3 ${!isAdmin ? 'rounded-lg' : ''}`}
                 >
                   <div className={`p-1 rounded ${folder.color}`}>
                     <Icon name={folder.icon as any} size={16} />
@@ -507,9 +507,9 @@ const Index = () => {
                       e.stopPropagation();
                       handleDeleteFolder(folder.id, e);
                     }}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-100 rounded z-10"
+                    className="p-2 mr-2 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100 rounded"
                   >
-                    <Icon name="Trash2" size={14} className="text-red-600" />
+                    <Icon name="Trash2" size={16} className="text-red-600" />
                   </button>
                 )}
               </div>
