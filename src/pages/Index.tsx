@@ -541,14 +541,15 @@ const Index = () => {
               <Icon name="FileText" className="text-gray-700" size={24} />
               <h2 className="text-2xl font-semibold text-gray-900">Документы</h2>
               {selectedFolder && (
-                <Badge variant="secondary" className="text-sm">
+                <Badge 
+                  variant="secondary" 
+                  className="text-sm cursor-pointer hover:bg-secondary/80 transition-colors"
+                  onClick={() => setSelectedFolder(null)}
+                >
                   {getFolderById(selectedFolder)?.name}
-                  <button
-                    onClick={() => setSelectedFolder(null)}
-                    className="ml-2 hover:text-destructive transition-colors"
-                  >
+                  <span className="ml-2 hover:text-destructive transition-colors">
                     ×
-                  </button>
+                  </span>
                 </Badge>
               )}
             </div>
@@ -670,8 +671,14 @@ const Index = () => {
                       <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
                         {doc.name}
                       </CardTitle>
-                      <CardDescription className="line-clamp-2 text-sm">
-                        {doc.description}
+                      <CardDescription className="line-clamp-2 text-sm group/desc relative">
+                        <span className="block">{doc.description}</span>
+                        {doc.description && doc.description.length > 80 && (
+                          <div className="absolute hidden group-hover/desc:block z-50 bg-gray-900 text-white p-3 rounded-lg shadow-xl text-xs max-w-sm -top-2 left-0 whitespace-normal">
+                            {doc.description}
+                            <div className="absolute -bottom-1 left-4 w-2 h-2 bg-gray-900 rotate-45"></div>
+                          </div>
+                        )}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
