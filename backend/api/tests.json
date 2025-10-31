@@ -10,7 +10,8 @@
           "id": "number",
           "name": "string",
           "color": "string",
-          "icon": "string"
+          "icon": "string",
+          "order": "number"
         }
       ],
       "bodyMatcher": "partial"

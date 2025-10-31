@@ -1,0 +1,1 @@
+ALTER TABLE folders ADD COLUMN folder_order INTEGER DEFAULT 0;

@@ -29,6 +29,7 @@ interface Folder {
   name: string;
   color: string;
   icon: string;
+  order?: number;
 }
 
 const FOLDER_COLORS = [
@@ -69,6 +70,7 @@ const Index = () => {
   const [editingDoc, setEditingDoc] = useState<Document | null>(null);
   const [openEditDocDialog, setOpenEditDocDialog] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [draggedFolder, setDraggedFolder] = useState<string | null>(null);
 
   const { toast } = useToast();
 
@@ -131,7 +133,7 @@ const Index = () => {
     try {
       const response = await fetch(`${API_URL}?path=folders`);
       const data = await response.json();
-      setFolders(data.map((f: any) => ({ ...f, id: f.id.toString() })));
+      setFolders(data.map((f: any, index: number) => ({ ...f, id: f.id.toString(), order: f.order ?? index })));
     } catch (error) {
       toast({ title: 'Ошибка', description: 'Не удалось загрузить папки', variant: 'destructive' });
     } finally {
@@ -316,6 +318,44 @@ const Index = () => {
     }
   };
 
+  const handleDragStart = (folderId: string) => {
+    setDraggedFolder(folderId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, targetFolderId: string) => {
+    e.preventDefault();
+    if (!draggedFolder || draggedFolder === targetFolderId) return;
+
+    const draggedIndex = folders.findIndex(f => f.id === draggedFolder);
+    const targetIndex = folders.findIndex(f => f.id === targetFolderId);
+
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    const newFolders = [...folders];
+    const [removed] = newFolders.splice(draggedIndex, 1);
+    newFolders.splice(targetIndex, 0, removed);
+
+    setFolders(newFolders.map((f, index) => ({ ...f, order: index })));
+  };
+
+  const handleDragEnd = async () => {
+    if (!draggedFolder) return;
+    
+    try {
+      await fetch(`${API_URL}?path=folders-reorder`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          folders: folders.map((f, index) => ({ id: parseInt(f.id), order: index }))
+        }),
+      });
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось сохранить порядок', variant: 'destructive' });
+    }
+    
+    setDraggedFolder(null);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-white flex items-center justify-center">
@@ -427,13 +467,20 @@ const Index = () => {
               Все документы
               <span className="ml-auto text-sm">{documents.length}</span>
             </button>
-            {folders.map((folder) => (
-              <div key={folder.id} className="relative group">
+            {folders.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((folder) => (
+              <div 
+                key={folder.id} 
+                className="relative group"
+                draggable={isAdmin}
+                onDragStart={() => handleDragStart(folder.id)}
+                onDragOver={(e) => handleDragOver(e, folder.id)}
+                onDragEnd={handleDragEnd}
+              >
                 <button
                   onClick={() => setSelectedFolder(folder.id)}
                   className={`w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-3 ${
                     selectedFolder === folder.id ? 'bg-primary/10 text-primary font-medium' : 'text-gray-700'
-                  }`}
+                  } ${draggedFolder === folder.id ? 'opacity-50' : ''} ${isAdmin ? 'cursor-move' : ''}`}
                 >
                   <div className={`p-1 rounded ${folder.color}`}>
                     <Icon name={folder.icon as any} size={16} />

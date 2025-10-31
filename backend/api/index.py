@@ -40,12 +40,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         if path == 'folders':
             if method == 'GET':
-                cur.execute('SELECT id, name, color, icon FROM folders ORDER BY created_at')
+                cur.execute('SELECT id, name, color, icon, folder_order FROM folders ORDER BY folder_order, created_at')
                 folders = cur.fetchall()
+                result = []
+                for row in folders:
+                    folder = dict(row)
+                    folder['order'] = folder.pop('folder_order', None)
+                    result.append(folder)
                 return {
                     'statusCode': 200,
                     'headers': headers,
-                    'body': json.dumps([dict(row) for row in folders])
+                    'body': json.dumps(result)
                 }
             
             elif method == 'POST':
@@ -229,6 +234,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     },
                     'isBase64Encoded': True,
                     'body': doc['file_data']
+                }
+        
+        elif path == 'folders-reorder':
+            if method == 'PUT':
+                body = json.loads(event.get('body', '{}'))
+                folders_data = body.get('folders', [])
+                
+                for folder_data in folders_data:
+                    folder_id = folder_data.get('id')
+                    order = folder_data.get('order')
+                    cur.execute(
+                        'UPDATE folders SET folder_order = %s WHERE id = %s',
+                        (order, folder_id)
+                    )
+                
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': headers,
+                    'body': json.dumps({'success': True})
                 }
         
         return {
