@@ -457,8 +457,8 @@ const Index = () => {
               </Button>
             )}
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">📁 Документы</h1>
-              <p className="text-gray-600">Управляйте PDF документами с удобным поиском и организацией</p>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">📁 Каталог психотехник</h1>
+              <p className="text-gray-600">Воспользуйтесь поиском или переходом по структуре</p>
             </div>
           </div>
           <div className="flex gap-2">
