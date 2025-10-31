@@ -327,9 +327,15 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-white flex">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-white flex relative">
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden" 
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       <aside className={`bg-white shadow-lg transition-all duration-300 ${
-        sidebarOpen ? 'w-80' : 'w-0'
+        sidebarOpen ? 'w-80 fixed lg:relative z-50 h-screen lg:h-auto' : 'w-0'
       } overflow-hidden flex flex-col`}>
         <div className="p-4 border-b flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -449,19 +455,22 @@ const Index = () => {
       
       <div className="flex-1 overflow-auto">
         <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="mb-8 animate-fade-in flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {!sidebarOpen && (
-              <Button variant="outline" size="sm" onClick={() => setSidebarOpen(true)}>
-                <Icon name="Menu" size={18} />
-              </Button>
-            )}
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">📁 Каталог психотехник</h1>
-              <p className="text-gray-600">Воспользуйтесь поиском или переходом по структуре</p>
+        <div className="mb-8 animate-fade-in">
+          <div className="flex items-center gap-4 mb-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden"
+            >
+              <Icon name="Menu" size={18} />
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">📁 Каталог психотехник</h1>
+              <p className="text-sm md:text-base text-gray-600">Воспользуйтесь поиском или переходом по структуре</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 justify-end">
             {isAdmin ? (
               <Button variant="outline" onClick={handleLogout} className="gap-2">
                 <Icon name="LogOut" size={18} />
