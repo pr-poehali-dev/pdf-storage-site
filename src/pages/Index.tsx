@@ -20,6 +20,7 @@ interface Document {
   folderId: string;
   uploadDate: string;
   size: string;
+  fileUrl?: string;
 }
 
 interface Folder {
@@ -61,10 +62,12 @@ const Index = () => {
   const [newDocName, setNewDocName] = useState('');
   const [newDocDescription, setNewDocDescription] = useState('');
   const [newDocFolder, setNewDocFolder] = useState('');
+  const [newDocFile, setNewDocFile] = useState<File | null>(null);
   const [openDocDialog, setOpenDocDialog] = useState(false);
 
   const [editingDoc, setEditingDoc] = useState<Document | null>(null);
   const [openEditDocDialog, setOpenEditDocDialog] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const { toast } = useToast();
 
@@ -194,6 +197,18 @@ const Index = () => {
     }
 
     try {
+      let fileBase64 = null;
+      if (newDocFile) {
+        const reader = new FileReader();
+        fileBase64 = await new Promise<string>((resolve) => {
+          reader.onload = () => {
+            const base64 = reader.result as string;
+            resolve(base64.split(',')[1]);
+          };
+          reader.readAsDataURL(newDocFile);
+        });
+      }
+
       const response = await fetch(`${API_URL}?path=documents`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -201,6 +216,7 @@ const Index = () => {
           name: newDocName,
           description: newDocDescription,
           folderId: parseInt(newDocFolder),
+          file: fileBase64,
         }),
       });
 
@@ -209,6 +225,7 @@ const Index = () => {
       setNewDocName('');
       setNewDocDescription('');
       setNewDocFolder('');
+      setNewDocFile(null);
       setOpenDocDialog(false);
       toast({ title: 'Успешно!', description: `Документ "${newDocName}" добавлен` });
     } catch (error) {
@@ -310,12 +327,139 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-white">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-white flex">
+      <aside className={`bg-white shadow-lg transition-all duration-300 ${
+        sidebarOpen ? 'w-80' : 'w-0'
+      } overflow-hidden flex flex-col`}>
+        <div className="p-4 border-b flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Icon name="Folder" size={20} />
+            Структура папок
+          </h2>
+          <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)} className="lg:hidden">
+            <Icon name="X" size={18} />
+          </Button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          {isAdmin && (
+            <Dialog open={openFolderDialog} onOpenChange={setOpenFolderDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full mb-4 gap-2">
+                  <Icon name="FolderPlus" size={18} />
+                  Создать папку
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Создать новую папку</DialogTitle>
+                  <DialogDescription>Укажите название, цвет и иконку для новой папки</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="folder-name">Название папки</Label>
+                    <Input
+                      id="folder-name"
+                      placeholder="Например: Важные документы"
+                      value={newFolderName}
+                      onChange={(e) => setNewFolderName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="folder-color">Цвет</Label>
+                    <Select value={newFolderColor} onValueChange={setNewFolderColor}>
+                      <SelectTrigger id="folder-color">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FOLDER_COLORS.map((color) => (
+                          <SelectItem key={color.value} value={color.value}>
+                            <div className="flex items-center gap-2">
+                              <div className={`w-4 h-4 rounded ${color.value}`}></div>
+                              {color.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="folder-icon">Иконка</Label>
+                    <Select value={newFolderIcon} onValueChange={setNewFolderIcon}>
+                      <SelectTrigger id="folder-icon">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FOLDER_ICONS.map((icon) => (
+                          <SelectItem key={icon} value={icon}>
+                            <div className="flex items-center gap-2">
+                              <Icon name={icon as any} size={16} />
+                              {icon}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpenFolderDialog(false)}>Отмена</Button>
+                  <Button onClick={handleCreateFolder}>Создать</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+          <div className="space-y-2">
+            <button
+              onClick={() => setSelectedFolder(null)}
+              className={`w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-3 ${
+                selectedFolder === null ? 'bg-primary/10 text-primary font-medium' : 'text-gray-700'
+              }`}
+            >
+              <Icon name="Home" size={18} />
+              Все документы
+              <span className="ml-auto text-sm">{documents.length}</span>
+            </button>
+            {folders.map((folder) => (
+              <div key={folder.id} className="relative group">
+                <button
+                  onClick={() => setSelectedFolder(folder.id)}
+                  className={`w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-3 ${
+                    selectedFolder === folder.id ? 'bg-primary/10 text-primary font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  <div className={`p-1 rounded ${folder.color}`}>
+                    <Icon name={folder.icon as any} size={16} />
+                  </div>
+                  <span className="flex-1 truncate">{folder.name}</span>
+                  <span className="text-sm">{documents.filter(d => d.folderId === folder.id).length}</span>
+                </button>
+                {isAdmin && (
+                  <button
+                    onClick={(e) => handleDeleteFolder(folder.id, e)}
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-100 rounded"
+                  >
+                    <Icon name="Trash2" size={14} className="text-red-600" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </aside>
+      
+      <div className="flex-1 overflow-auto">
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="mb-8 animate-fade-in flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">📁 Документы</h1>
-            <p className="text-gray-600">Управляйте PDF документами с удобным поиском и организацией</p>
+          <div className="flex items-center gap-4">
+            {!sidebarOpen && (
+              <Button variant="outline" size="sm" onClick={() => setSidebarOpen(true)}>
+                <Icon name="Menu" size={18} />
+              </Button>
+            )}
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">📁 Документы</h1>
+              <p className="text-gray-600">Управляйте PDF документами с удобным поиском и организацией</p>
+            </div>
           </div>
           <div className="flex gap-2">
             {isAdmin ? (
@@ -380,114 +524,7 @@ const Index = () => {
           </div>
         </div>
 
-        <div className="mb-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Icon name="Folder" className="text-gray-700" size={24} />
-              <h2 className="text-2xl font-semibold text-gray-900">Папки</h2>
-            </div>
-            {isAdmin && (
-              <Dialog open={openFolderDialog} onOpenChange={setOpenFolderDialog}>
-                <DialogTrigger asChild>
-                  <Button className="gap-2 hover:scale-105 transition-transform">
-                    <Icon name="FolderPlus" size={20} />
-                    Создать папку
-                  </Button>
-                </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Создать новую папку</DialogTitle>
-                  <DialogDescription>Укажите название, цвет и иконку для новой папки</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="folder-name">Название папки</Label>
-                    <Input
-                      id="folder-name"
-                      placeholder="Например: Важные документы"
-                      value={newFolderName}
-                      onChange={(e) => setNewFolderName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="folder-color">Цвет</Label>
-                    <Select value={newFolderColor} onValueChange={setNewFolderColor}>
-                      <SelectTrigger id="folder-color">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {FOLDER_COLORS.map((color) => (
-                          <SelectItem key={color.value} value={color.value}>
-                            <div className="flex items-center gap-2">
-                              <div className={`w-4 h-4 rounded ${color.value}`}></div>
-                              {color.label}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="folder-icon">Иконка</Label>
-                    <Select value={newFolderIcon} onValueChange={setNewFolderIcon}>
-                      <SelectTrigger id="folder-icon">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {FOLDER_ICONS.map((icon) => (
-                          <SelectItem key={icon} value={icon}>
-                            <div className="flex items-center gap-2">
-                              <Icon name={icon as any} size={16} />
-                              {icon}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setOpenFolderDialog(false)}>Отмена</Button>
-                  <Button onClick={handleCreateFolder}>Создать</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            )}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {folders.map((folder) => (
-              <Card
-                key={folder.id}
-                className={`cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-xl group ${
-                  selectedFolder === folder.id ? 'ring-2 ring-primary shadow-lg' : ''
-                }`}
-                onClick={() => setSelectedFolder(selectedFolder === folder.id ? null : folder.id)}
-              >
-                <CardContent className="p-6 relative">
-                  {isAdmin && (
-                    <button
-                      onClick={(e) => handleDeleteFolder(folder.id, e)}
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
-                    >
-                      <Icon name="Trash2" size={16} className="text-red-600" />
-                    </button>
-                  )}
-                  <div className="flex items-center gap-3">
-                    <div className={`p-3 rounded-lg ${folder.color}`}>
-                      <Icon name={folder.icon as any} size={24} />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg">{folder.name}</h3>
-                      <p className="text-sm text-gray-500">
-                        {documents.filter(d => d.folderId === folder.id).length} док.
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+
 
         <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
           <div className="flex items-center justify-between mb-4">
@@ -556,6 +593,21 @@ const Index = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="doc-file">Загрузить PDF файл (необязательно)</Label>
+                    <Input
+                      id="doc-file"
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) => setNewDocFile(e.target.files?.[0] || null)}
+                      className="cursor-pointer"
+                    />
+                    {newDocFile && (
+                      <p className="text-sm text-gray-600">
+                        Выбран: {newDocFile.name} ({(newDocFile.size / 1024).toFixed(1)} KB)
+                      </p>
+                    )}
                   </div>
                 </div>
                 <DialogFooter>
@@ -689,6 +741,7 @@ const Index = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
     </div>
   );

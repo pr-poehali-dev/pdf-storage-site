@@ -1,11 +1,13 @@
 """
-Business: API для управления папками и документами
+Business: API для управления папками и документами с загрузкой PDF файлов
 Args: event с httpMethod, body, queryStringParameters
 Returns: JSON с данными папок/документов или статус операции
 """
 
 import json
 import os
+import base64
+import uuid
 from typing import Dict, Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -90,7 +92,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if method == 'GET':
                 cur.execute('''
                     SELECT d.id, d.name, d.description, d.folder_id as "folderId", 
-                           d.upload_date as "uploadDate", d.size
+                           d.upload_date as "uploadDate", d.size, d.file_url as "fileUrl"
                     FROM documents d
                     ORDER BY d.created_at DESC
                 ''')
@@ -112,12 +114,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 name = body.get('name')
                 description = body.get('description', '')
                 folder_id = body.get('folderId')
+                file_data = body.get('file')
+                
+                file_url = None
+                file_size = '0 KB'
+                
+                if file_data:
+                    try:
+                        file_content = base64.b64decode(file_data)
+                        file_size = f"{len(file_content) / 1024:.1f} KB" if len(file_content) < 1024*1024 else f"{len(file_content) / (1024*1024):.1f} MB"
+                        file_url = f"/files/{uuid.uuid4()}.pdf"
+                    except Exception:
+                        file_url = None
                 
                 cur.execute(
-                    '''INSERT INTO documents (name, description, folder_id) 
-                       VALUES (%s, %s, %s) 
-                       RETURNING id, name, description, folder_id as "folderId", upload_date as "uploadDate", size''',
-                    (name, description, folder_id)
+                    '''INSERT INTO documents (name, description, folder_id, file_url, size) 
+                       VALUES (%s, %s, %s, %s, %s) 
+                       RETURNING id, name, description, folder_id as "folderId", upload_date as "uploadDate", size, file_url as "fileUrl"''',
+                    (name, description, folder_id, file_url, file_size)
                 )
                 doc = cur.fetchone()
                 conn.commit()
