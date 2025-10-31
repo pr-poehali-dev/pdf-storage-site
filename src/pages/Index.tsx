@@ -467,7 +467,9 @@ const Index = () => {
               Все документы
               <span className="ml-auto text-sm">{documents.length}</span>
             </button>
-            {folders.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((folder) => (
+            {folders.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((folder) => {
+              console.log('isAdmin:', isAdmin);
+              return (
               <div 
                 key={folder.id} 
                 className={`relative group w-full rounded-lg transition-all flex items-center ${
@@ -477,7 +479,7 @@ const Index = () => {
                 }`}
                 onDragOver={(e) => handleDragOver(e, folder.id)}
               >
-                {isAdmin && (
+                {isAdmin ? (
                   <div
                     draggable
                     onDragStart={(e) => {
@@ -513,7 +515,7 @@ const Index = () => {
                   </button>
                 )}
               </div>
-            ))}
+            )}))}
           </div>
         </div>
       </aside>
