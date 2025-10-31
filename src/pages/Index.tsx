@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 
@@ -327,6 +328,7 @@ const Index = () => {
   }
 
   return (
+    <TooltipProvider>
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-white flex relative">
       {sidebarOpen && (
         <div 
@@ -671,15 +673,22 @@ const Index = () => {
                       <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
                         {doc.name}
                       </CardTitle>
-                      <CardDescription className="line-clamp-2 text-sm group/desc relative">
-                        <span className="block">{doc.description}</span>
-                        {doc.description && doc.description.length > 80 && (
-                          <div className="absolute hidden group-hover/desc:block z-50 bg-gray-900 text-white p-3 rounded-lg shadow-xl text-xs max-w-sm -top-2 left-0 whitespace-normal">
-                            {doc.description}
-                            <div className="absolute -bottom-1 left-4 w-2 h-2 bg-gray-900 rotate-45"></div>
-                          </div>
-                        )}
-                      </CardDescription>
+                      {doc.description && doc.description.length > 80 ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <CardDescription className="line-clamp-2 text-sm cursor-help">
+                              {doc.description}
+                            </CardDescription>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-sm">
+                            <p>{doc.description}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <CardDescription className="line-clamp-2 text-sm">
+                          {doc.description}
+                        </CardDescription>
+                      )}
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
@@ -772,6 +781,7 @@ const Index = () => {
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 };
 
