@@ -20,7 +20,7 @@ interface Document {
   folderId: string;
   uploadDate: string;
   size: string;
-  fileUrl?: string;
+  hasFile?: boolean;
 }
 
 interface Folder {
@@ -676,11 +676,23 @@ const Index = () => {
                         </Badge>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="flex-1 hover:bg-primary hover:text-white transition-all">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1 hover:bg-primary hover:text-white transition-all"
+                          disabled={!doc.hasFile}
+                          onClick={() => window.open(`${API_URL}?path=view&id=${doc.id}`, '_blank')}
+                        >
                           <Icon name="Eye" size={16} className="mr-1" />
                           Открыть
                         </Button>
-                        <Button variant="outline" size="sm" className="flex-1 hover:bg-secondary hover:text-white transition-all">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1 hover:bg-secondary hover:text-white transition-all"
+                          disabled={!doc.hasFile}
+                          onClick={() => window.open(`${API_URL}?path=download&id=${doc.id}`, '_blank')}
+                        >
                           <Icon name="Download" size={16} className="mr-1" />
                           Скачать
                         </Button>

@@ -92,7 +92,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if method == 'GET':
                 cur.execute('''
                     SELECT d.id, d.name, d.description, d.folder_id as "folderId", 
-                           d.upload_date as "uploadDate", d.size, d.file_url as "fileUrl"
+                           d.upload_date as "uploadDate", d.size,
+                           CASE WHEN d.file_data IS NOT NULL THEN true ELSE false END as "hasFile"
                     FROM documents d
                     ORDER BY d.created_at DESC
                 ''')
@@ -123,15 +124,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     try:
                         file_content = base64.b64decode(file_data)
                         file_size = f"{len(file_content) / 1024:.1f} KB" if len(file_content) < 1024*1024 else f"{len(file_content) / (1024*1024):.1f} MB"
-                        file_url = f"/files/{uuid.uuid4()}.pdf"
                     except Exception:
-                        file_url = None
+                        file_data = None
+                        file_size = '0 KB'
                 
                 cur.execute(
-                    '''INSERT INTO documents (name, description, folder_id, file_url, size) 
+                    '''INSERT INTO documents (name, description, folder_id, file_data, size) 
                        VALUES (%s, %s, %s, %s, %s) 
-                       RETURNING id, name, description, folder_id as "folderId", upload_date as "uploadDate", size, file_url as "fileUrl"''',
-                    (name, description, folder_id, file_url, file_size)
+                       RETURNING id, name, description, folder_id as "folderId", upload_date as "uploadDate", size''',
+                    (name, description, folder_id, file_data, file_size)
                 )
                 doc = cur.fetchone()
                 conn.commit()
@@ -180,6 +181,54 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'statusCode': 200,
                     'headers': headers,
                     'body': json.dumps({'success': True})
+                }
+        
+        elif path == 'download':
+            if method == 'GET':
+                doc_id = event.get('queryStringParameters', {}).get('id')
+                cur.execute('SELECT file_data, name FROM documents WHERE id = %s', (doc_id,))
+                doc = cur.fetchone()
+                
+                if not doc or not doc['file_data']:
+                    return {
+                        'statusCode': 404,
+                        'headers': headers,
+                        'body': json.dumps({'error': 'File not found'})
+                    }
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Access-Control-Allow-Origin': '*',
+                        'Content-Type': 'application/pdf',
+                        'Content-Disposition': f'attachment; filename="{doc["name"]}.pdf"'
+                    },
+                    'isBase64Encoded': True,
+                    'body': doc['file_data']
+                }
+        
+        elif path == 'view':
+            if method == 'GET':
+                doc_id = event.get('queryStringParameters', {}).get('id')
+                cur.execute('SELECT file_data, name FROM documents WHERE id = %s', (doc_id,))
+                doc = cur.fetchone()
+                
+                if not doc or not doc['file_data']:
+                    return {
+                        'statusCode': 404,
+                        'headers': headers,
+                        'body': json.dumps({'error': 'File not found'})
+                    }
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Access-Control-Allow-Origin': '*',
+                        'Content-Type': 'application/pdf',
+                        'Content-Disposition': f'inline; filename="{doc["name"]}.pdf"'
+                    },
+                    'isBase64Encoded': True,
+                    'body': doc['file_data']
                 }
         
         return {
