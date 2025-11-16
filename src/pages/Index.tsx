@@ -292,6 +292,18 @@ const Index = () => {
     }
 
     try {
+      let fileBase64 = null;
+      if (newDocFile) {
+        const reader = new FileReader();
+        fileBase64 = await new Promise<string>((resolve) => {
+          reader.onload = () => {
+            const base64 = reader.result as string;
+            resolve(base64.split(',')[1]);
+          };
+          reader.readAsDataURL(newDocFile);
+        });
+      }
+
       const response = await fetch(`${API_URL}?path=documents`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -300,6 +312,7 @@ const Index = () => {
           name: newDocName,
           description: newDocDescription,
           folderId: parseInt(newDocFolder),
+          file: fileBase64,
         }),
       });
 
@@ -313,6 +326,7 @@ const Index = () => {
       setNewDocName('');
       setNewDocDescription('');
       setNewDocFolder('');
+      setNewDocFile(null);
       setOpenEditDocDialog(false);
       toast({ title: 'Успешно!', description: 'Документ обновлён' });
     } catch (error) {
