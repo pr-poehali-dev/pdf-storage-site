@@ -67,6 +67,7 @@ interface DocumentDialogsProps {
   setOpenEditDocDialog: (open: boolean) => void;
   handleUpdateDocument: () => void;
   folders: Folder[];
+  isUpdating?: boolean;
 }
 
 export const LoginDialog = ({ 
@@ -297,8 +298,9 @@ export const EditDocumentDialog = ({
   newDocFile,
   setNewDocFile,
   handleUpdateDocument,
-  folders
-}: Pick<DocumentDialogsProps, 'openEditDocDialog' | 'setOpenEditDocDialog' | 'newDocName' | 'setNewDocName' | 'newDocDescription' | 'setNewDocDescription' | 'newDocFolder' | 'setNewDocFolder' | 'newDocFile' | 'setNewDocFile' | 'handleUpdateDocument' | 'folders'>) => (
+  folders,
+  isUpdating
+}: Pick<DocumentDialogsProps, 'openEditDocDialog' | 'setOpenEditDocDialog' | 'newDocName' | 'setNewDocName' | 'newDocDescription' | 'setNewDocDescription' | 'newDocFolder' | 'setNewDocFolder' | 'newDocFile' | 'setNewDocFile' | 'handleUpdateDocument' | 'folders' | 'isUpdating'>) => (
   <Dialog open={openEditDocDialog} onOpenChange={setOpenEditDocDialog}>
     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
@@ -313,6 +315,7 @@ export const EditDocumentDialog = ({
             placeholder="Название документа"
             value={newDocName}
             onChange={(e) => setNewDocName(e.target.value)}
+            disabled={isUpdating}
           />
         </div>
         <div className="space-y-2">
@@ -323,11 +326,12 @@ export const EditDocumentDialog = ({
             value={newDocDescription}
             onChange={(e) => setNewDocDescription(e.target.value)}
             rows={3}
+            disabled={isUpdating}
           />
         </div>
         <div className="space-y-2">
           <Label htmlFor="edit-doc-folder">Папка</Label>
-          <Select value={newDocFolder} onValueChange={setNewDocFolder}>
+          <Select value={newDocFolder} onValueChange={setNewDocFolder} disabled={isUpdating}>
             <SelectTrigger id="edit-doc-folder">
               <SelectValue />
             </SelectTrigger>
@@ -348,6 +352,7 @@ export const EditDocumentDialog = ({
             accept=".pdf"
             onChange={(e) => setNewDocFile(e.target.files?.[0] || null)}
             className="cursor-pointer"
+            disabled={isUpdating}
           />
           {newDocFile && (
             <p className="text-sm text-gray-600">
@@ -357,8 +362,13 @@ export const EditDocumentDialog = ({
         </div>
       </div>
       <DialogFooter>
-        <Button variant="outline" onClick={() => setOpenEditDocDialog(false)}>Отмена</Button>
-        <Button onClick={handleUpdateDocument}>Сохранить</Button>
+        <Button variant="outline" onClick={() => setOpenEditDocDialog(false)} disabled={isUpdating}>
+          Отмена
+        </Button>
+        <Button onClick={handleUpdateDocument} disabled={isUpdating}>
+          {isUpdating && <Icon name="Loader2" className="mr-2 animate-spin" size={16} />}
+          Сохранить
+        </Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

@@ -72,6 +72,7 @@ const Index = () => {
   const [draggedFolder, setDraggedFolder] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [allExpanded, setAllExpanded] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const { toast } = useToast();
 
@@ -291,6 +292,7 @@ const Index = () => {
       return;
     }
 
+    setIsUpdating(true);
     try {
       let fileBase64 = null;
       if (newDocFile) {
@@ -331,6 +333,8 @@ const Index = () => {
       toast({ title: 'Успешно!', description: 'Документ обновлён' });
     } catch (error) {
       toast({ title: 'Ошибка', description: 'Не удалось обновить документ', variant: 'destructive' });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -562,6 +566,7 @@ const Index = () => {
           setNewDocFile={setNewDocFile}
           handleUpdateDocument={handleUpdateDocument}
           folders={folders}
+          isUpdating={isUpdating}
         />
         </div>
       </div>
