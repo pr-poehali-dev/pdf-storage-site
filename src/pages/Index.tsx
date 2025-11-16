@@ -863,7 +863,7 @@ const Index = () => {
         </div>
 
         <Dialog open={openEditDocDialog} onOpenChange={setOpenEditDocDialog}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Редактировать документ</DialogTitle>
               <DialogDescription>Измените информацию о документе</DialogDescription>
