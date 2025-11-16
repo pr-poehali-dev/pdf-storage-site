@@ -902,6 +902,21 @@ const Index = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-doc-file">Загрузить PDF файл (необязательно)</Label>
+                <Input
+                  id="edit-doc-file"
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => setNewDocFile(e.target.files?.[0] || null)}
+                  className="cursor-pointer"
+                />
+                {newDocFile && (
+                  <p className="text-sm text-gray-600">
+                    Выбран: {newDocFile.name} ({(newDocFile.size / 1024).toFixed(1)} KB)
+                  </p>
+                )}
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpenEditDocDialog(false)}>Отмена</Button>
