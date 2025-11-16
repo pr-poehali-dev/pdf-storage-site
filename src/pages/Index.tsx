@@ -200,19 +200,20 @@ const Index = () => {
       toast({ title: 'Ошибка', description: 'Выберите папку', variant: 'destructive' });
       return;
     }
+    if (!newDocFile) {
+      toast({ title: 'Ошибка', description: 'Загрузите PDF файл', variant: 'destructive' });
+      return;
+    }
 
     try {
-      let fileBase64 = null;
-      if (newDocFile) {
-        const reader = new FileReader();
-        fileBase64 = await new Promise<string>((resolve) => {
-          reader.onload = () => {
-            const base64 = reader.result as string;
-            resolve(base64.split(',')[1]);
-          };
-          reader.readAsDataURL(newDocFile);
-        });
-      }
+      const reader = new FileReader();
+      const fileBase64 = await new Promise<string>((resolve) => {
+        reader.onload = () => {
+          const base64 = reader.result as string;
+          resolve(base64.split(',')[1]);
+        };
+        reader.readAsDataURL(newDocFile);
+      });
 
       const response = await fetch(`${API_URL}?path=documents`, {
         method: 'POST',

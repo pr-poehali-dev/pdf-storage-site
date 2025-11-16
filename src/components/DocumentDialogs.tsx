@@ -263,7 +263,7 @@ export const AddDocumentDialog = ({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="doc-file">Загрузить PDF файл (необязательно)</Label>
+          <Label htmlFor="doc-file">Загрузить PDF файл *</Label>
           <Input
             id="doc-file"
             type="file"
