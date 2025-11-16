@@ -282,6 +282,7 @@ const Index = () => {
     setNewDocName(doc.name);
     setNewDocDescription(doc.description);
     setNewDocFolder(doc.folderId);
+    setNewDocFile(null);
     setOpenEditDocDialog(true);
   };
 
