@@ -288,13 +288,14 @@ const Index = () => {
   };
 
   const handleUpdateDocument = async () => {
+    console.log('handleUpdateDocument called!');
     if (!editingDoc || !newDocName.trim()) {
       toast({ title: 'Ошибка', description: 'Введите название документа', variant: 'destructive' });
       return;
     }
 
     setIsUpdating(true);
-    console.log('Starting update, isUpdating:', true);
+    console.log('Starting update, isUpdating set to true');
     try {
       let fileBase64 = null;
       if (newDocFile) {
