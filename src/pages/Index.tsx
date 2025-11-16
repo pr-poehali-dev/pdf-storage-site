@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
+import Sidebar from '@/components/Sidebar';
+import DocumentCard from '@/components/DocumentCard';
+import { LoginDialog, CreateFolderDialog, AddDocumentDialog, EditDocumentDialog } from '@/components/DocumentDialogs';
 
 const API_URL = 'https://functions.poehali.dev/61726929-8064-4724-aa73-122743ce45cf';
 const AUTH_URL = 'https://functions.poehali.dev/0260e0c7-55cb-4dce-8b66-8677fbbe2609';
@@ -408,184 +407,36 @@ const Index = () => {
   return (
     <TooltipProvider>
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-white flex relative">
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden" 
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-      <aside className={`bg-white shadow-lg transition-all duration-300 ${
-        sidebarOpen ? 'w-80 fixed lg:relative z-50 h-screen lg:h-auto' : 'w-0'
-      } overflow-hidden flex flex-col`}>
-        <div className="p-4 border-b flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <Icon name="Folder" size={20} />
-            Структура папок
-          </h2>
-          <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)} className="lg:hidden">
-            <Icon name="X" size={18} />
-          </Button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4">
-          {isAdmin && (
-            <Dialog open={openFolderDialog} onOpenChange={setOpenFolderDialog}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="w-full mb-4 gap-2">
-                  <Icon name="FolderPlus" size={18} />
-                  Создать папку
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Создать новую папку</DialogTitle>
-                  <DialogDescription>Укажите название, цвет и иконку для новой папки</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="folder-name">Название папки</Label>
-                    <Input
-                      id="folder-name"
-                      placeholder="Например: Важные документы"
-                      value={newFolderName}
-                      onChange={(e) => setNewFolderName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="folder-color">Цвет</Label>
-                    <Select value={newFolderColor} onValueChange={setNewFolderColor}>
-                      <SelectTrigger id="folder-color">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {FOLDER_COLORS.map((color) => (
-                          <SelectItem key={color.value} value={color.value}>
-                            <div className="flex items-center gap-2">
-                              <div className={`w-4 h-4 rounded ${color.value}`}></div>
-                              {color.label}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="folder-icon">Иконка</Label>
-                    <Select value={newFolderIcon} onValueChange={setNewFolderIcon}>
-                      <SelectTrigger id="folder-icon">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {FOLDER_ICONS.map((icon) => (
-                          <SelectItem key={icon} value={icon}>
-                            <div className="flex items-center gap-2">
-                              <Icon name={icon as any} size={16} />
-                              {icon}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setOpenFolderDialog(false)}>Отмена</Button>
-                  <Button onClick={handleCreateFolder}>Создать</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          )}
-          <div className="mb-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleExpandAll}
-              className="w-full justify-start gap-2"
-            >
-              <Icon name={allExpanded ? "ChevronUp" : "ChevronDown"} size={16} />
-              {allExpanded ? 'Свернуть все' : 'Развернуть все'}
-            </Button>
-          </div>
-
-          <div className="space-y-2">
-            <button
-              onClick={() => setSelectedFolder(null)}
-              className={`w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-3 ${
-                selectedFolder === null ? 'bg-primary/10 text-primary font-medium' : 'text-gray-700'
-              }`}
-            >
-              <Icon name="Home" size={18} />
-              Все документы
-              <span className="ml-auto text-sm">{documents.length}</span>
-            </button>
-            {folders.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((folder) => {
-              const folderDocs = documents.filter(d => d.folderId === folder.id);
-              const isExpanded = expandedFolders.has(folder.id);
-              
-              return (
-              <div key={folder.id} className="space-y-1">
-                <div 
-                  className={`relative group w-full rounded-lg transition-all ${
-                    selectedFolder === folder.id ? 'bg-primary/10 text-primary font-medium' : 'text-gray-700'
-                  } ${draggedFolder === folder.id ? 'opacity-30 scale-95' : ''} ${
-                    draggedFolder && draggedFolder !== folder.id ? 'border-2 border-dashed border-primary' : ''
-                  }`}
-                  onDragOver={(e) => handleDragOver(e, folder.id)}
-                >
-                  <div className="flex items-center">
-                    <button
-                      onClick={() => toggleFolder(folder.id)}
-                      className="p-2 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <Icon 
-                        name={isExpanded ? "ChevronDown" : "ChevronRight"} 
-                        size={16} 
-                        className="text-gray-500"
-                      />
-                    </button>
-                    <div
-                      onClick={() => setSelectedFolder(folder.id)}
-                      className="flex-1 p-3 py-2 cursor-pointer hover:bg-gray-100/50 flex items-center gap-3 rounded-r-lg"
-                    >
-                      <div className={`p-1 rounded ${folder.color}`}>
-                        <Icon name={folder.icon as any} size={16} />
-                      </div>
-                      <span className="flex-1 truncate">{folder.name}</span>
-                      <span className="text-sm">{folderDocs.length}</span>
-                    </div>
-                    {isAdmin && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteFolder(folder.id, e);
-                        }}
-                        className="p-2 mr-2 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100 rounded"
-                      >
-                        <Icon name="Trash2" size={16} className="text-red-600" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-                
-                {isExpanded && folderDocs.length > 0 && (
-                  <div className="ml-8 space-y-1">
-                    {folderDocs.map((doc) => (
-                      <div
-                        key={doc.id}
-                        onClick={() => window.open(`${API_URL}?path=view&id=${doc.id}`, '_blank')}
-                        className="p-2 pl-3 rounded text-sm hover:bg-gray-100 cursor-pointer flex items-center gap-2 text-gray-600"
-                      >
-                        <Icon name="FileText" size={14} />
-                        <span className="flex-1 truncate">{doc.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )
-            })}
-          </div>
-        </div>
-      </aside>
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        folders={folders}
+        documents={documents}
+        selectedFolder={selectedFolder}
+        setSelectedFolder={setSelectedFolder}
+        expandedFolders={expandedFolders}
+        toggleFolder={toggleFolder}
+        allExpanded={allExpanded}
+        toggleExpandAll={toggleExpandAll}
+        isAdmin={isAdmin}
+        draggedFolder={draggedFolder}
+        handleDragOver={handleDragOver}
+        handleDeleteFolder={handleDeleteFolder}
+        apiUrl={API_URL}
+        createFolderButton={
+          <CreateFolderDialog
+            openFolderDialog={openFolderDialog}
+            setOpenFolderDialog={setOpenFolderDialog}
+            newFolderName={newFolderName}
+            setNewFolderName={setNewFolderName}
+            newFolderColor={newFolderColor}
+            setNewFolderColor={setNewFolderColor}
+            newFolderIcon={newFolderIcon}
+            setNewFolderIcon={setNewFolderIcon}
+            handleCreateFolder={handleCreateFolder}
+          />
+        }
+      />
       
       <div className="flex-1 overflow-auto">
         <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -611,45 +462,15 @@ const Index = () => {
                 Выйти
               </Button>
             ) : (
-              <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <Icon name="Lock" size={18} />
-                    Вход для админа
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Вход администратора</DialogTitle>
-                    <DialogDescription>Введите логин и пароль для управления документами</DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="username">Логин</Label>
-                      <Input
-                        id="username"
-                        value={loginUsername}
-                        onChange={(e) => setLoginUsername(e.target.value)}
-                        placeholder="admin"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="password">Пароль</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        placeholder="••••••"
-                        onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button onClick={handleLogin}>Войти</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <LoginDialog
+                showLoginDialog={showLoginDialog}
+                setShowLoginDialog={setShowLoginDialog}
+                loginUsername={loginUsername}
+                setLoginUsername={setLoginUsername}
+                loginPassword={loginPassword}
+                setLoginPassword={setLoginPassword}
+                handleLogin={handleLogin}
+              />
             )}
           </div>
         </div>
@@ -666,8 +487,6 @@ const Index = () => {
             />
           </div>
         </div>
-
-
 
         <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
           <div className="flex items-center justify-between mb-4">
@@ -688,78 +507,20 @@ const Index = () => {
               )}
             </div>
             {isAdmin && (
-              <Dialog open={openDocDialog} onOpenChange={setOpenDocDialog}>
-                <DialogTrigger asChild>
-                  <Button className="gap-2 hover:scale-105 transition-transform">
-                    <Icon name="Upload" size={20} />
-                    Добавить документ
-                  </Button>
-                </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Добавить документ</DialogTitle>
-                  <DialogDescription>Укажите информацию о документе</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="doc-name">Название документа</Label>
-                    <Input
-                      id="doc-name"
-                      placeholder="Например: Договор с поставщиком"
-                      value={newDocName}
-                      onChange={(e) => setNewDocName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="doc-description">Описание</Label>
-                    <Textarea
-                      id="doc-description"
-                      placeholder="Краткое описание документа..."
-                      value={newDocDescription}
-                      onChange={(e) => setNewDocDescription(e.target.value)}
-                      rows={3}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="doc-folder">Папка</Label>
-                    <Select value={newDocFolder} onValueChange={setNewDocFolder}>
-                      <SelectTrigger id="doc-folder">
-                        <SelectValue placeholder="Выберите папку" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {folders.map((folder) => (
-                          <SelectItem key={folder.id} value={folder.id}>
-                            <div className="flex items-center gap-2">
-                              <Icon name={folder.icon as any} size={16} />
-                              {folder.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="doc-file">Загрузить PDF файл (необязательно)</Label>
-                    <Input
-                      id="doc-file"
-                      type="file"
-                      accept=".pdf"
-                      onChange={(e) => setNewDocFile(e.target.files?.[0] || null)}
-                      className="cursor-pointer"
-                    />
-                    {newDocFile && (
-                      <p className="text-sm text-gray-600">
-                        Выбран: {newDocFile.name} ({(newDocFile.size / 1024).toFixed(1)} KB)
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setOpenDocDialog(false)}>Отмена</Button>
-                  <Button onClick={handleAddDocument}>Добавить</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+              <AddDocumentDialog
+                openDocDialog={openDocDialog}
+                setOpenDocDialog={setOpenDocDialog}
+                newDocName={newDocName}
+                setNewDocName={setNewDocName}
+                newDocDescription={newDocDescription}
+                setNewDocDescription={setNewDocDescription}
+                newDocFolder={newDocFolder}
+                setNewDocFolder={setNewDocFolder}
+                newDocFile={newDocFile}
+                setNewDocFile={setNewDocFile}
+                handleAddDocument={handleAddDocument}
+                folders={folders}
+              />
             )}
           </div>
 
@@ -773,158 +534,35 @@ const Index = () => {
               {filteredDocuments.map((doc) => {
                 const folder = getFolderById(doc.folderId);
                 return (
-                  <Card key={doc.id} className="hover:shadow-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer group relative">
-                    {isAdmin && (
-                      <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditDocument(doc);
-                          }}
-                          className="p-2 hover:bg-blue-100 rounded"
-                        >
-                          <Icon name="Edit" size={16} className="text-blue-600" />
-                        </button>
-                        <button
-                          onClick={(e) => handleDeleteDocument(doc.id, e)}
-                          className="p-2 hover:bg-red-100 rounded"
-                        >
-                          <Icon name="Trash2" size={16} className="text-red-600" />
-                        </button>
-                      </div>
-                    )}
-                    <CardHeader>
-                      <div className="flex items-start justify-between mb-2">
-                        <div className={`p-2 rounded-lg ${folder?.color}`}>
-                          <Icon name="FileText" size={20} />
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {doc.size}
-                        </Badge>
-                      </div>
-                      <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
-                        {doc.name}
-                      </CardTitle>
-                      {doc.description ? (
-                        <Tooltip delayDuration={300}>
-                          <TooltipTrigger asChild>
-                            <CardDescription className="line-clamp-2 text-sm cursor-help">
-                              {doc.description}
-                            </CardDescription>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-md p-3">
-                            <p className="whitespace-pre-wrap">{doc.description}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        <CardDescription className="line-clamp-2 text-sm text-gray-400">
-                          Описание отсутствует
-                        </CardDescription>
-                      )}
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                        <div className="flex items-center gap-1">
-                          <Icon name="Calendar" size={14} />
-                          {new Date(doc.uploadDate).toLocaleDateString('ru-RU')}
-                        </div>
-                        <Badge variant="secondary" className="text-xs">
-                          {folder?.name}
-                        </Badge>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex-1 hover:bg-primary hover:text-white transition-all"
-                          disabled={!doc.hasFile}
-                          onClick={() => window.open(`${API_URL}?path=view&id=${doc.id}`, '_blank')}
-                        >
-                          <Icon name="Eye" size={16} className="mr-1" />
-                          Открыть
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex-1 hover:bg-secondary hover:text-white transition-all"
-                          disabled={!doc.hasFile}
-                          onClick={() => window.open(`${API_URL}?path=download&id=${doc.id}`, '_blank')}
-                        >
-                          <Icon name="Download" size={16} className="mr-1" />
-                          Скачать
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <DocumentCard
+                    key={doc.id}
+                    doc={doc}
+                    folder={folder}
+                    isAdmin={isAdmin}
+                    apiUrl={API_URL}
+                    onEdit={handleEditDocument}
+                    onDelete={handleDeleteDocument}
+                  />
                 );
               })}
             </div>
           )}
         </div>
 
-        <Dialog open={openEditDocDialog} onOpenChange={setOpenEditDocDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Редактировать документ</DialogTitle>
-              <DialogDescription>Измените информацию о документе</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-doc-name">Название документа</Label>
-                <Input
-                  id="edit-doc-name"
-                  placeholder="Название документа"
-                  value={newDocName}
-                  onChange={(e) => setNewDocName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-doc-description">Описание</Label>
-                <Textarea
-                  id="edit-doc-description"
-                  placeholder="Описание документа..."
-                  value={newDocDescription}
-                  onChange={(e) => setNewDocDescription(e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-doc-folder">Папка</Label>
-                <Select value={newDocFolder} onValueChange={setNewDocFolder}>
-                  <SelectTrigger id="edit-doc-folder">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {folders.map((folder) => (
-                      <SelectItem key={folder.id} value={folder.id}>
-                        {folder.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-doc-file">Загрузить PDF файл (необязательно)</Label>
-                <Input
-                  id="edit-doc-file"
-                  type="file"
-                  accept=".pdf"
-                  onChange={(e) => setNewDocFile(e.target.files?.[0] || null)}
-                  className="cursor-pointer"
-                />
-                {newDocFile && (
-                  <p className="text-sm text-gray-600">
-                    Выбран: {newDocFile.name} ({(newDocFile.size / 1024).toFixed(1)} KB)
-                  </p>
-                )}
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpenEditDocDialog(false)}>Отмена</Button>
-              <Button onClick={handleUpdateDocument}>Сохранить</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <EditDocumentDialog
+          openEditDocDialog={openEditDocDialog}
+          setOpenEditDocDialog={setOpenEditDocDialog}
+          newDocName={newDocName}
+          setNewDocName={setNewDocName}
+          newDocDescription={newDocDescription}
+          setNewDocDescription={setNewDocDescription}
+          newDocFolder={newDocFolder}
+          setNewDocFolder={setNewDocFolder}
+          newDocFile={newDocFile}
+          setNewDocFile={setNewDocFile}
+          handleUpdateDocument={handleUpdateDocument}
+          folders={folders}
+        />
         </div>
       </div>
     </div>
