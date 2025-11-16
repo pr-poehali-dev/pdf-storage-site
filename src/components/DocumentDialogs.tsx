@@ -300,7 +300,10 @@ export const EditDocumentDialog = ({
   handleUpdateDocument,
   folders,
   isUpdating
-}: Pick<DocumentDialogsProps, 'openEditDocDialog' | 'setOpenEditDocDialog' | 'newDocName' | 'setNewDocName' | 'newDocDescription' | 'setNewDocDescription' | 'newDocFolder' | 'setNewDocFolder' | 'newDocFile' | 'setNewDocFile' | 'handleUpdateDocument' | 'folders' | 'isUpdating'>) => (
+}: Pick<DocumentDialogsProps, 'openEditDocDialog' | 'setOpenEditDocDialog' | 'newDocName' | 'setNewDocName' | 'newDocDescription' | 'setNewDocDescription' | 'newDocFolder' | 'setNewDocFolder' | 'newDocFile' | 'setNewDocFile' | 'handleUpdateDocument' | 'folders' | 'isUpdating'>) => {
+  console.log('EditDocumentDialog render, isUpdating:', isUpdating);
+  
+  return (
   <Dialog open={openEditDocDialog} onOpenChange={setOpenEditDocDialog}>
     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
@@ -372,4 +375,5 @@ export const EditDocumentDialog = ({
       </DialogFooter>
     </DialogContent>
   </Dialog>
-);
+  );
+};

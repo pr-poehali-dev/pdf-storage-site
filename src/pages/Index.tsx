@@ -293,6 +293,7 @@ const Index = () => {
     }
 
     setIsUpdating(true);
+    console.log('Starting update, isUpdating:', true);
     try {
       let fileBase64 = null;
       if (newDocFile) {
@@ -334,6 +335,7 @@ const Index = () => {
     } catch (error) {
       toast({ title: 'Ошибка', description: 'Не удалось обновить документ', variant: 'destructive' });
     } finally {
+      console.log('Finished update, isUpdating:', false);
       setIsUpdating(false);
     }
   };
