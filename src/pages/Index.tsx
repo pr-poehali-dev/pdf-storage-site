@@ -145,14 +145,10 @@ const Index = () => {
 
   const loadDocuments = async () => {
     try {
-      console.log('Loading documents from:', `${API_URL}?path=documents`);
       const response = await fetch(`${API_URL}?path=documents`);
-      console.log('Response status:', response.status);
       const data = await response.json();
-      console.log('Documents loaded:', data);
       setDocuments(data.map((d: any) => ({ ...d, id: d.id.toString(), folderId: d.folderId.toString() })));
     } catch (error) {
-      console.error('Error loading documents:', error);
       toast({ title: 'Ошибка', description: 'Не удалось загрузить документы', variant: 'destructive' });
     }
   };
@@ -292,14 +288,12 @@ const Index = () => {
   };
 
   const handleUpdateDocument = async () => {
-    console.log('handleUpdateDocument called!');
     if (!editingDoc || !newDocName.trim()) {
       toast({ title: 'Ошибка', description: 'Введите название документа', variant: 'destructive' });
       return;
     }
 
     setIsUpdating(true);
-    console.log('Starting update, isUpdating set to true');
     try {
       let fileBase64 = null;
       if (newDocFile) {
