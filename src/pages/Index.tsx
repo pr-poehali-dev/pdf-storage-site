@@ -226,6 +226,10 @@ const Index = () => {
         }),
       });
 
+      if (!response.ok) {
+        throw new Error('Failed to create document');
+      }
+
       const newDoc = await response.json();
       setDocuments([...documents, { ...newDoc, id: newDoc.id.toString(), folderId: newDoc.folderId.toString() }]);
       setNewDocName('');

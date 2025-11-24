@@ -122,6 +122,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 folder_id = body.get('folderId')
                 file_data = body.get('file')
                 
+                print(f'Creating document: name={name}, folder_id={folder_id}, has_file={file_data is not None}')
+                
                 file_url = None
                 file_size = '0 KB'
                 
