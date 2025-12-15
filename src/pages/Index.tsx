@@ -133,10 +133,15 @@ const Index = () => {
 
   const loadFolders = async () => {
     try {
+      console.log('Loading folders from:', `${API_URL}?path=folders`);
       const response = await fetch(`${API_URL}?path=folders`);
+      console.log('Folders response status:', response.status);
       const data = await response.json();
+      console.log('Folders data:', data);
       setFolders(data.map((f: any, index: number) => ({ ...f, id: f.id.toString(), order: f.order ?? index })));
+      console.log('Folders set successfully');
     } catch (error) {
+      console.error('Fetch error:', error, 'for', `${API_URL}?path=folders`);
       toast({ title: 'Ошибка', description: 'Не удалось загрузить папки', variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -145,10 +150,15 @@ const Index = () => {
 
   const loadDocuments = async () => {
     try {
+      console.log('Loading documents from:', `${API_URL}?path=documents`);
       const response = await fetch(`${API_URL}?path=documents`);
+      console.log('Documents response status:', response.status);
       const data = await response.json();
+      console.log('Documents data length:', data.length);
       setDocuments(data.map((d: any) => ({ ...d, id: d.id.toString(), folderId: d.folderId.toString() })));
+      console.log('Documents set successfully');
     } catch (error) {
+      console.error('Fetch error:', error, 'for', `${API_URL}?path=documents`);
       toast({ title: 'Ошибка', description: 'Не удалось загрузить документы', variant: 'destructive' });
     }
   };
