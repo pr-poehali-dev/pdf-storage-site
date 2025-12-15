@@ -7,7 +7,6 @@ Returns: JSON с данными папок/документов или стат�
 import json
 import os
 import base64
-import uuid
 from typing import Dict, Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -31,6 +30,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {
             'statusCode': 200,
             'headers': headers,
+            'isBase64Encoded': False,
             'body': ''
         }
     
@@ -40,7 +40,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         if path == 'folders':
             if method == 'GET':
-                cur.execute('SELECT id, name, color, icon, folder_order FROM folders ORDER BY folder_order, created_at')
+                cur.execute('SELECT id, name, color, icon, folder_order FROM t_p21179491_pdf_storage_site.folders ORDER BY folder_order, created_at')
                 folders = cur.fetchall()
                 result = []
                 for row in folders:
@@ -50,6 +50,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {
                     'statusCode': 200,
                     'headers': headers,
+                    'isBase64Encoded': False,
                     'body': json.dumps(result)
                 }
             
@@ -60,7 +61,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 icon = body.get('icon')
                 
                 cur.execute(
-                    "INSERT INTO folders (name, color, icon) VALUES (%s, %s, %s) RETURNING id, name, color, icon",
+                    "INSERT INTO t_p21179491_pdf_storage_site.folders (name, color, icon) VALUES (%s, %s, %s) RETURNING id, name, color, icon",
                     (name, color, icon)
                 )
                 folder = cur.fetchone()
@@ -69,27 +70,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {
                     'statusCode': 201,
                     'headers': headers,
+                    'isBase64Encoded': False,
                     'body': json.dumps(dict(folder))
                 }
             
             elif method == 'DELETE':
                 folder_id = event.get('queryStringParameters', {}).get('id')
-                cur.execute('SELECT COUNT(*) as count FROM documents WHERE folder_id = %s', (folder_id,))
+                cur.execute('SELECT COUNT(*) as count FROM t_p21179491_pdf_storage_site.documents WHERE folder_id = %s', (folder_id,))
                 result = cur.fetchone()
                 
                 if result['count'] > 0:
                     return {
                         'statusCode': 400,
                         'headers': headers,
+                        'isBase64Encoded': False,
                         'body': json.dumps({'error': 'Папка содержит документы'})
                     }
                 
-                cur.execute('DELETE FROM folders WHERE id = %s', (folder_id,))
+                cur.execute('DELETE FROM t_p21179491_pdf_storage_site.folders WHERE id = %s', (folder_id,))
                 conn.commit()
                 
                 return {
                     'statusCode': 200,
                     'headers': headers,
+                    'isBase64Encoded': False,
                     'body': json.dumps({'success': True})
                 }
         
@@ -99,7 +103,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     SELECT d.id, d.name, d.description, d.folder_id as "folderId", 
                            d.upload_date as "uploadDate", d.size,
                            CASE WHEN d.file_data IS NOT NULL THEN true ELSE false END as "hasFile"
-                    FROM documents d
+                    FROM t_p21179491_pdf_storage_site.documents d
                     ORDER BY d.created_at DESC
                 ''')
                 documents = cur.fetchall()
@@ -112,6 +116,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {
                     'statusCode': 200,
                     'headers': headers,
+                    'isBase64Encoded': False,
                     'body': json.dumps(result)
                 }
             
@@ -122,9 +127,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 folder_id = body.get('folderId')
                 file_data = body.get('file')
                 
-                print(f'Creating document: name={name}, folder_id={folder_id}, has_file={file_data is not None}')
-                
-                file_url = None
                 file_size = '0 KB'
                 
                 if file_data:
@@ -136,7 +138,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         file_size = '0 KB'
                 
                 cur.execute(
-                    '''INSERT INTO documents (name, description, folder_id, file_data, size) 
+                    '''INSERT INTO t_p21179491_pdf_storage_site.documents (name, description, folder_id, file_data, size) 
                        VALUES (%s, %s, %s, %s, %s) 
                        RETURNING id, name, description, folder_id as "folderId", upload_date as "uploadDate", size''',
                     (name, description, folder_id, file_data, file_size)
@@ -150,6 +152,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {
                     'statusCode': 201,
                     'headers': headers,
+                    'isBase64Encoded': False,
                     'body': json.dumps(result)
                 }
             
@@ -161,7 +164,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 folder_id = body.get('folderId')
                 
                 cur.execute(
-                    '''UPDATE documents 
+                    '''UPDATE t_p21179491_pdf_storage_site.documents 
                        SET name = %s, description = %s, folder_id = %s
                        WHERE id = %s
                        RETURNING id, name, description, folder_id as "folderId", upload_date as "uploadDate", size''',
@@ -176,30 +179,33 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {
                     'statusCode': 200,
                     'headers': headers,
+                    'isBase64Encoded': False,
                     'body': json.dumps(result)
                 }
             
             elif method == 'DELETE':
                 doc_id = event.get('queryStringParameters', {}).get('id')
-                cur.execute('DELETE FROM documents WHERE id = %s', (doc_id,))
+                cur.execute('DELETE FROM t_p21179491_pdf_storage_site.documents WHERE id = %s', (doc_id,))
                 conn.commit()
                 
                 return {
                     'statusCode': 200,
                     'headers': headers,
+                    'isBase64Encoded': False,
                     'body': json.dumps({'success': True})
                 }
         
         elif path == 'download':
             if method == 'GET':
                 doc_id = event.get('queryStringParameters', {}).get('id')
-                cur.execute('SELECT file_data, name FROM documents WHERE id = %s', (doc_id,))
+                cur.execute('SELECT file_data, name FROM t_p21179491_pdf_storage_site.documents WHERE id = %s', (doc_id,))
                 doc = cur.fetchone()
                 
                 if not doc or not doc['file_data']:
                     return {
                         'statusCode': 404,
                         'headers': headers,
+                        'isBase64Encoded': False,
                         'body': json.dumps({'error': 'File not found'})
                     }
                 
@@ -214,41 +220,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': doc['file_data']
                 }
         
-        elif path == 'view':
-            if method == 'GET':
-                doc_id = event.get('queryStringParameters', {}).get('id')
-                cur.execute('SELECT file_data, name FROM documents WHERE id = %s', (doc_id,))
-                doc = cur.fetchone()
-                
-                if not doc or not doc['file_data']:
-                    return {
-                        'statusCode': 404,
-                        'headers': headers,
-                        'body': json.dumps({'error': 'File not found'})
-                    }
-                
-                return {
-                    'statusCode': 200,
-                    'headers': {
-                        'Access-Control-Allow-Origin': '*',
-                        'Content-Type': 'application/pdf',
-                        'Content-Disposition': f'inline; filename="{doc["name"]}.pdf"'
-                    },
-                    'isBase64Encoded': True,
-                    'body': doc['file_data']
-                }
-        
-        elif path == 'folders-reorder':
+        elif path == 'reorder':
             if method == 'PUT':
                 body = json.loads(event.get('body', '{}'))
-                folders_data = body.get('folders', [])
+                folder_ids = body.get('folderIds', [])
                 
-                for folder_data in folders_data:
-                    folder_id = folder_data.get('id')
-                    order = folder_data.get('order')
+                for idx, folder_id in enumerate(folder_ids):
                     cur.execute(
-                        'UPDATE folders SET folder_order = %s WHERE id = %s',
-                        (order, folder_id)
+                        'UPDATE t_p21179491_pdf_storage_site.folders SET folder_order = %s WHERE id = %s',
+                        (idx, folder_id)
                     )
                 
                 conn.commit()
@@ -256,13 +236,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {
                     'statusCode': 200,
                     'headers': headers,
+                    'isBase64Encoded': False,
                     'body': json.dumps({'success': True})
                 }
         
         return {
             'statusCode': 404,
             'headers': headers,
-            'body': json.dumps({'error': 'Not found'})
+            'isBase64Encoded': False,
+            'body': json.dumps({'error': 'Path not found'})
+        }
+    
+    except Exception as e:
+        conn.rollback()
+        return {
+            'statusCode': 500,
+            'headers': headers,
+            'isBase64Encoded': False,
+            'body': json.dumps({'error': str(e)})
         }
     
     finally:

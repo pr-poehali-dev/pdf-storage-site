@@ -10,8 +10,8 @@ import Sidebar from '@/components/Sidebar';
 import DocumentCard from '@/components/DocumentCard';
 import { LoginDialog, CreateFolderDialog, AddDocumentDialog, EditDocumentDialog } from '@/components/DocumentDialogs';
 
-const API_URL = 'https://functions.poehali.dev/61726929-8064-4724-aa73-122743ce45cf';
-const AUTH_URL = 'https://functions.poehali.dev/0260e0c7-55cb-4dce-8b66-8677fbbe2609';
+const API_URL = 'https://functions.poehali.dev/7916b8a7-f1d6-439c-b8dd-33447351a72e';
+const AUTH_URL = 'https://functions.poehali.dev/afe527ed-a001-4bca-9f22-54d1b5e5c2ea';
 
 interface Document {
   id: string;

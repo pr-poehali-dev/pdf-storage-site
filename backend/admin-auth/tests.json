@@ -1,0 +1,14 @@
+{
+  "tests": [
+    {
+      "name": "Check auth status",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "authenticated": "boolean"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

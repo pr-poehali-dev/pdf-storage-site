@@ -1,0 +1,18 @@
+{
+  "tests": [
+    {
+      "name": "Get folders",
+      "method": "GET",
+      "path": "/?path=folders",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get documents",
+      "method": "GET",
+      "path": "/?path=documents",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    }
+  ]
+}
