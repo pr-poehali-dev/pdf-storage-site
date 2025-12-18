@@ -195,6 +195,31 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'success': True})
                 }
         
+        elif path == 'view':
+            if method == 'GET':
+                doc_id = event.get('queryStringParameters', {}).get('id')
+                cur.execute('SELECT file_data, name FROM t_p21179491_pdf_storage_site.documents WHERE id = %s', (doc_id,))
+                doc = cur.fetchone()
+                
+                if not doc or not doc['file_data']:
+                    return {
+                        'statusCode': 404,
+                        'headers': headers,
+                        'isBase64Encoded': False,
+                        'body': json.dumps({'error': 'File not found'})
+                    }
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Access-Control-Allow-Origin': '*',
+                        'Content-Type': 'application/pdf',
+                        'Content-Disposition': f'inline; filename="{doc["name"]}.pdf"'
+                    },
+                    'isBase64Encoded': True,
+                    'body': doc['file_data']
+                }
+        
         elif path == 'download':
             if method == 'GET':
                 doc_id = event.get('queryStringParameters', {}).get('id')
