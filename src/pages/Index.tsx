@@ -169,6 +169,8 @@ const Index = () => {
     const matchesFolder = !selectedFolder || doc.folderId === selectedFolder;
     return matchesSearch && matchesFolder;
   });
+  
+  console.log('Filtered documents count:', filteredDocuments.length, 'Total documents:', documents.length, 'Selected folder:', selectedFolder, 'Search query:', searchQuery);
 
   const getFolderById = (id: string) => folders.find(f => f.id === id);
 
