@@ -77,8 +77,11 @@ const Index = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    loadFolders();
-    loadDocuments();
+    const loadData = async () => {
+      await Promise.all([loadFolders(), loadDocuments()]);
+      setLoading(false);
+    };
+    loadData();
     checkAuth();
   }, []);
 
@@ -143,8 +146,6 @@ const Index = () => {
     } catch (error) {
       console.error('Fetch error:', error, 'for', `${API_URL}?path=folders`);
       toast({ title: 'Ошибка', description: 'Не удалось загрузить папки', variant: 'destructive' });
-    } finally {
-      setLoading(false);
     }
   };
 
