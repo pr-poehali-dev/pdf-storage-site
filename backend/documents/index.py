@@ -34,10 +34,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': ''
         }
     
-    conn = get_db_connection()
-    cur = conn.cursor()
-    
     try:
+        conn = get_db_connection()
+        cur = conn.cursor()
         if path == 'folders':
             if method == 'GET':
                 cur.execute('SELECT id, name, color, icon, folder_order FROM t_p21179491_pdf_storage_site.folders ORDER BY folder_order, created_at')
@@ -273,7 +272,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     except Exception as e:
-        conn.rollback()
+        if 'conn' in locals():
+            conn.rollback()
         return {
             'statusCode': 500,
             'headers': headers,
@@ -282,5 +282,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     finally:
-        cur.close()
-        conn.close()
+        if 'cur' in locals():
+            cur.close()
+        if 'conn' in locals():
+            conn.close()
